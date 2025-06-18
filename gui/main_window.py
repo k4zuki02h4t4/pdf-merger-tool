@@ -1,6 +1,7 @@
 """
 メインウィンドウGUIモジュール
 CustomTkinterを使用したモダンなWindows 11スタイルのUI
+ドラッグ&ドロップ機能対応
 """
 
 import customtkinter as ctk
@@ -12,6 +13,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 from pdf_merger import PDFMerger
+from tkinterdnd2 import TkinterDnD, DND_FILES
 
 class PDFFileFrame(ctk.CTkFrame):
     """PDFファイル表示用フレーム"""
@@ -103,19 +105,23 @@ class PDFFileFrame(ctk.CTkFrame):
         """ファイルを下に移動"""
         self.move_callback(self.index, 1)
 
-class PDFMergerApp(ctk.CTk):
-    """メインアプリケーションクラス"""
+class PDFMergerApp(ctk.CTk, TkinterDnD.DnDWrapper):
+    """メインアプリケーションクラス - ドラッグ&ドロップ対応"""
     
     def __init__(self):
         super().__init__()
         
+        # TkinterDnDの初期化
+        self.TkdndVersion = TkinterDnD._require(self)
+        
         # アプリケーション設定
+        self.version = 770
         self.w_width = 600
         self.w_height = 770
-        self.title("PDF 結合ツール v1.0.0")
+        self.title("PDF 結合ツール v1.1.0")
         self.resizable(False, False)
         self.minsize(self.w_width, self.w_height)
-        self.myappid = u'kaleidpixel.python.pdf_merge_tool.1-0-0'
+        self.myappid = u'kaleidpixel.python.pdf_merge_tool.1-1-0'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(self.myappid)
         
         # アイコン設定
@@ -134,6 +140,76 @@ class PDFMergerApp(ctk.CTk):
         # GUI作成
         self.create_widgets()
         self.center_window()
+        
+        # ドラッグ&ドロップ設定
+        self.setup_drag_and_drop()
+    
+    def setup_drag_and_drop(self):
+        """ドラッグ&ドロップ機能の設定"""
+        try:
+            # メインウィンドウをドロップターゲットとして登録
+            self.drop_target_register(DND_FILES)
+            self.dnd_bind('<<Drop>>', self.on_drop)
+            
+            # ファイルリスト表示エリアもドロップターゲットとして登録
+            # CTkScrollableFrameの内部フレームを取得してドロップターゲットに登録
+            try:
+                self.files_frame.drop_target_register(DND_FILES)
+                self.files_frame.dnd_bind('<<Drop>>', self.on_drop)
+            except AttributeError:
+                # CTkScrollableFrameで直接登録できない場合は、メインウィンドウのみ使用
+                pass
+                
+        except Exception as e:
+            # ドラッグ&ドロップの設定に失敗した場合はログに記録（エラーダイアログは表示しない）
+            print(f"ドラッグ&ドロップ設定エラー: {e}")
+    
+    def on_drop(self, event):
+        """ドロップイベントハンドラー"""
+        try:
+            # ドロップされたファイルパスを処理
+            dropped_data = event.data
+            
+            # Windows形式のファイルパス（波括弧で囲まれている場合）を処理
+            if dropped_data.startswith('{') and dropped_data.endswith('}'):
+                dropped_data = dropped_data[1:-1]
+            
+            # 複数ファイルの場合、スペースで分割（ただし、パスにスペースが含まれる場合を考慮）
+            file_paths = []
+            if dropped_data.startswith('"') or ' ' not in dropped_data:
+                # 単一ファイルまたは引用符で囲まれている場合
+                file_paths = [dropped_data.strip('"')]
+            else:
+                # 複数ファイルの可能性がある場合
+                # より高度な解析が必要な場合はここを拡張
+                file_paths = [path.strip('"') for path in dropped_data.split(' ') if path.strip()]
+            
+            # PDFファイルのみをフィルタリング
+            pdf_files = []
+            for file_path in file_paths:
+                if file_path.lower().endswith('.pdf') and os.path.exists(file_path):
+                    pdf_files.append(file_path)
+            
+            if pdf_files:
+                # 既存のファイル追加ロジックを使用
+                self.add_pdf_files(pdf_files)
+                self.update_status(f"ドラッグ&ドロップで{len(pdf_files)}個のPDFファイルを追加しました")
+            else:
+                # PDFファイルが見つからない場合
+                if file_paths:
+                    self.update_status("ドロップされたファイルにPDFファイルが含まれていません")
+                    messagebox.showwarning(
+                        "警告", 
+                        "PDFファイルのみ追加できます。\n"
+                        "ドロップされたファイルにPDFファイルが含まれていませんでした。"
+                    )
+                else:
+                    self.update_status("ドロップされたファイルを認識できませんでした")
+        
+        except Exception as e:
+            # エラーが発生した場合
+            self.update_status(f"ドラッグ&ドロップ処理でエラーが発生しました: {e}")
+            messagebox.showerror("エラー", f"ファイルのドロップ処理中にエラーが発生しました:\n{e}")
     
     def center_window(self):
         """ウィンドウを画面中央に配置"""
@@ -153,6 +229,15 @@ class PDFMergerApp(ctk.CTk):
             font=ctk.CTkFont(size=24, weight="bold")
         )
         title_label.pack(pady=20)
+        
+        # ドラッグ&ドロップ案内ラベル
+        dnd_info_label = ctk.CTkLabel(
+            self,
+            text="💡 ファイルをこのウィンドウにドラッグ&ドロップして追加することもできます",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
+        )
+        dnd_info_label.pack(pady=(0, 10))
         
         # ファイル選択ボタン
         self.select_button = ctk.CTkButton(
@@ -271,7 +356,7 @@ class PDFMergerApp(ctk.CTk):
         # ステータスバー
         self.status_label = ctk.CTkLabel(
             self,
-            text="PDFファイルを選択してください (最低2個必要)",
+            text="PDFファイルを選択またはドラッグ&ドロップしてください (最低2個必要)",
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )
@@ -354,7 +439,7 @@ class PDFMergerApp(ctk.CTk):
         else:
             self.merge_button.configure(state="disabled")
             if file_count == 0:
-                self.update_status("PDFファイルを選択してください (最低2個必要)")
+                self.update_status("PDFファイルを選択またはドラッグ&ドロップしてください (最低2個必要)")
             else:
                 self.update_status(f"あと{2-file_count}個のPDFファイルが必要です")
         

@@ -27,10 +27,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. PyInstaller で exe をビルド
+      # 4. PyInstaller で exe をビルド（tkinterdnd2対応）
       - name: Build Executable
         run: |
-          pyinstaller main.py --onefile --noconsole --clean --version-file=versioninfo.txt --name=PDFMergerTool --icon=pdf-merger-tool.ico --add-data "pdf-merger-tool.ico;."
+          pyinstaller main.py --onefile --noconsole --clean --version-file=versioninfo.txt --name=PDFMergerTool --icon=pdf-merger-tool.ico --add-data "pdf-merger-tool.ico;." --additional-hooks-dir=.
 
       # 5. リリースを作成
       - name: Create GitHub Release
