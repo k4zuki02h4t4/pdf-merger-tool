@@ -24,6 +24,11 @@ PDF ファイル結合アプリケーションです。
 
 ## 🛠️ インストール手順
 
+### 方法1: 実行ファイルをダウンロードして実行
+1. [リリースページ](https://github.com/k4zuki02h4t4/pdf-merger-tool/releases/latest)から実行ファイルをダウンロード
+2. ダウンロードしたファイルを起動させる
+
+### 方法2: ソースコードから直接実行
 1. Python をインストール（3.9 以上）
 2. 必要なライブラリをインストール：
    ```bash
@@ -38,17 +43,17 @@ PDF ファイル結合アプリケーションです。
 
 1. 必要なライブラリをインストール：
    ```bash
-   pip install pyinstaller
+   pip install -r requirements.txt
    ```
 1. ビルドを実行：
    ```bash
-   pyinstaller main.py --onefile --noconsole --clean --version-file=versioninfo.txt --name=PDFMergerTool --icon=pdf-merger-tool.ico  --add-data="pdf-merger-tool.ico;."
+   pyinstaller main.py --onefile --noconsole --clean --version-file=versioninfo.txt --name=PDFMergerTool --icon=pdf-merger-tool.ico --add-data "pdf-merger-tool.ico;." --additional-hooks-dir=.
    ```
 
 ## 📖 使用方法
 
 1. **PDF ファイルの追加**
-   - 「PDF ファイルを選択」ボタンをクリック
+   - ドラッグ&ドロップまたは「PDF ファイルを選択」ボタンをクリック
 
 2. **ファイル順序の調整**
    - ↑↓ボタンでファイルの順序を変更
