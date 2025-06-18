@@ -30,14 +30,7 @@ jobs:
       # 4. PyInstaller で exe をビルド
       - name: Build Executable
         run: |
-          pyinstaller main.py \
-            --onefile \
-            --noconsole \
-            --clean \
-            --version-file=versioninfo.txt \
-            --name=PDFMergerTool \
-            --icon=pdf-merger-tool.ico \
-            --add-data "pdf-merger-tool.ico;."
+          pyinstaller main.py --onefile --noconsole --clean --version-file=versioninfo.txt --name=PDFMergerTool --icon=pdf-merger-tool.ico --add-data "pdf-merger-tool.ico;."
 
       # 5. リリースを作成
       - name: Create GitHub Release
